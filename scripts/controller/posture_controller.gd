@@ -1,23 +1,24 @@
-extends Node
-
+@export var system: PostureSystem
 @export var visualizer: DeviationVisualizer
+@export var dashboard: Control
 
-var analyzer := PostureAnalyzer.new()
-var spine := PostureSegment.new()
+var timer := PostureTimer.new()
 
 func _ready():
-	spine.set_reference(Quaternion.IDENTITY)
-	analyzer.add_segment("spine", spine)
+	system.setup()
 
 func _process(delta):
-	# SIMULASI POSTUR SALAH
-	var simulated = Quaternion(Vector3(1, 0, 0), deg_to_rad(20))
-	spine.set_measured(simulated)
+	# SIMULASI
+	system.set_measured("upper_spine",
+		Quaternion(Vector3(1,0,0), deg_to_rad(20)))
 
-	var results = analyzer.analyze()
-	var dev = results["spine"]
+	var results = system.analyze()
+	var main = results["upper_spine"]
 
-	visualizer.visualize(dev.axis, dev.angle)
+	visualizer.visualize(main.axis, main.angle)
 
-	var score = PostureMetrics.posture_score(dev.angle)
-	print("Posture score:", score)
+	if timer.update(main.angle, delta):
+		system.segments["upper_spine"].apply_correction(0.05)
+
+	var score = system.overall_score(results)
+	dashboard.update_score(score)

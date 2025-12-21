@@ -1,7 +1,22 @@
-class_name PostureMetrics
+extends Node3D
+class_name DeviationVisualizer
 
-static func posture_score(angle: float, max_angle := deg_to_rad(30)) -> float:
-	return clamp(1.0 - angle / max_angle, 0.0, 1.0)
+@export var arrow: Node3D
+@export var mesh: MeshInstance3D
 
-static func error_energy(q_rel: Quaternion) -> float:
-	return 1.0 - q_rel.w * q_rel.w
+func visualize(axis: Vector3, angle: float):
+	if angle < 0.01:
+		arrow.visible = false
+		mesh.modulate = Color.GREEN
+		return
+
+	arrow.visible = true
+	arrow.look_at(arrow.global_position + axis, Vector3.UP)
+	arrow.scale.y = angle * 5.0
+
+	if angle < deg_to_rad(10):
+		mesh.modulate = Color.GREEN
+	elif angle < deg_to_rad(20):
+		mesh.modulate = Color.YELLOW
+	else:
+		mesh.modulate = Color.RED
