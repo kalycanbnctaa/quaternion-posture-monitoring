@@ -2,6 +2,14 @@ class_name PostureSystem
 
 var analyzer := PostureAnalyzer.new()
 
+# Weight contribution of each body segment
+# Higher weight means greater influence on posture quality
+var segment_weights := {
+	"neck": 0.3,
+	"upper_spine": 0.5,
+	"lower_spine": 0.2
+}
+
 var segments := {
 	"neck": PostureSegment.new(),
 	"upper_spine": PostureSegment.new(),
@@ -20,7 +28,23 @@ func analyze() -> Dictionary:
 	return analyzer.analyze()
 
 func overall_score(results: Dictionary) -> float:
-	var sum := 0.0
-	for r in results.values():
-		sum += PostureMetrics.posture_score(r.angle)
-	return sum / results.size()
+	if results.is_empty():
+		return 1.0  # No deviation detected → perfect posture
+
+	var weighted_sum := 0.0
+	var total_weight := 0.0
+
+	for name in results.keys():
+		var w := segment_weights.get(name, 1.0)
+		weighted_sum += w * PostureMetrics.posture_score(results[name].angle)
+		total_weight += w
+
+	return weighted_sum / total_weight
+
+func posture_status(score: float) -> String:
+	if score > 0.9:
+		return "Good Posture"
+	elif score > 0.7:
+		return "Fair Posture"
+	else:
+		return "Poor Posture"

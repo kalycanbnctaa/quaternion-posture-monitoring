@@ -6,3 +6,6 @@ extends Control
 func update_score(score: float):
 	progress.value = score * 100.0
 	score_label.text = "Posture Score: %d%%" % int(score * 100)
+
+func update_status(text: String):
+	label.text = text
