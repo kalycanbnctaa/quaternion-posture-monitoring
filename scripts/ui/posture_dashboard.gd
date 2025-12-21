@@ -1,6 +1,7 @@
 extends Control
 
 @export var score_label: Label
+@export var status_label: Label
 @export var progress: ProgressBar
 
 func update_score(score: float):
@@ -8,4 +9,5 @@ func update_score(score: float):
 	score_label.text = "Posture Score: %d%%" % int(score * 100)
 
 func update_status(text: String):
-	label.text = text
+	status_label.text = text
+	

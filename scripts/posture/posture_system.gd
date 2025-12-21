@@ -29,14 +29,28 @@ func analyze() -> Dictionary:
 
 func overall_score(results: Dictionary) -> float:
 	if results.is_empty():
-		return 1.0  # No deviation detected → perfect posture
+		return 1.0
 
 	var weighted_sum := 0.0
 	var total_weight := 0.0
 
 	for name in results.keys():
 		var w := segment_weights.get(name, 1.0)
-		weighted_sum += w * PostureMetrics.posture_score(results[name].angle)
+
+		var q_rel := segments[name].relative_quaternion()
+
+		# 1) Axis-angle based score
+		var angle := results[name].angle
+		var angle_score := PostureMetrics.posture_score(angle)
+
+		# 2) Geodesic distance based score
+		var d := PostureMetrics.geodesic_distance(q_rel)
+		var geo_score := clamp(1.0 - d / PI, 0.0, 1.0)
+
+		# Combine both (weighted average)
+		var score := 0.5 * angle_score + 0.5 * geo_score
+
+		weighted_sum += w * score
 		total_weight += w
 
 	return weighted_sum / total_weight
