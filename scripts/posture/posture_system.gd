@@ -110,3 +110,11 @@ func get_posture_status() -> String:
 		PostureState.POOR:
 			return "Poor Posture"
 	return "Unknown"
+
+func semantic_feedback(name: String) -> String:
+	if not segments.has(name):
+		return "Unknown posture segment"
+
+	var q_rel := segments[name].relative_quaternion()
+	return PostureMetrics.semantic_feedback(q_rel)
+
