@@ -118,3 +118,14 @@ func semantic_feedback(name: String) -> String:
 	var q_rel := segments[name].relative_quaternion()
 	return PostureMetrics.semantic_feedback(q_rel)
 
+func confidence_level(name: String) -> float:
+	if not segments.has(name):
+		return 0.0
+
+	var q_rel := segments[name].relative_quaternion()
+	var angle := 2.0 * acos(clamp(q_rel.w, -1.0, 1.0))
+	var geo := PostureMetrics.geodesic_distance(q_rel)
+
+	return PostureMetrics.confidence_score(angle, geo, history)
+
+

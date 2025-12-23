@@ -31,3 +31,29 @@ static func semantic_feedback(q_rel: Quaternion) -> String:
 
 	return "Detected issue: Complex posture deviation"
 
+
+static func confidence_score(
+	angle: float,
+	geo_dist: float,
+	history: Array
+) -> float:
+	var angle_conf := clamp(1.0 - angle / deg_to_rad(30.0), 0.0, 1.0)
+	var geo_conf := clamp(1.0 - geo_dist / PI, 0.0, 1.0)
+
+	var stability_conf := 1.0
+	if history.size() >= 3:
+		var variance := 0.0
+		var mean := 0.0
+		for h in history:
+			mean += h["angle"]
+		mean /= history.size()
+
+		for h in history:
+			variance += pow(h["angle"] - mean, 2)
+		variance /= history.size()
+
+		stability_conf = clamp(1.0 - variance / 0.05, 0.0, 1.0)
+
+	return 0.4 * angle_conf + 0.4 * geo_conf + 0.2 * stability_conf
+
+
