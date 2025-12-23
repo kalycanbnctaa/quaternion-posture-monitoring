@@ -1,9 +1,16 @@
+extends Node
 class_name PostureSystem
+
+enum PostureState {
+	GOOD,
+	FAIR,
+	POOR
+}
+
+var current_state: PostureState = PostureState.GOOD
 
 var analyzer := PostureAnalyzer.new()
 
-# Weight contribution of each body segment
-# Higher weight means greater influence on posture quality
 var segment_weights := {
 	"neck": 0.3,
 	"upper_spine": 0.5,
@@ -16,8 +23,12 @@ var segments := {
 	"lower_spine": PostureSegment.new()
 }
 
-# CONVERGENCE HISTORY (RESEARCH FEATURE) 
-var history := []   # [{time, angle, geo}]
+var history := []
+
+var enter_fair := 0.85
+var exit_fair := 0.90
+var enter_poor := 0.65
+var exit_poor := 0.75
 
 
 func setup():
@@ -27,20 +38,24 @@ func setup():
 
 
 func set_measured(name: String, q: Quaternion):
-	segments[name].set_measured(q)
+	if segments.has(name):
+		segments[name].set_measured(q)
 
 
 func analyze() -> Dictionary:
 	return analyzer.analyze()
 
 
-# LOG SYSTEM STATE FOR CONVERGENCE ANALYSIS
 func log_state(time: float, q_rel: Quaternion):
 	history.append({
 		"time": time,
 		"angle": 2.0 * acos(clamp(q_rel.w, -1.0, 1.0)),
 		"geo": PostureMetrics.geodesic_distance(q_rel)
 	})
+
+
+func get_error_history() -> Array:
+	return history
 
 
 func overall_score(results: Dictionary) -> float:
@@ -51,19 +66,18 @@ func overall_score(results: Dictionary) -> float:
 	var total_weight := 0.0
 
 	for name in results.keys():
-		var w := segment_weights.get(name, 1.0)
+		if not segments.has(name):
+			continue
 
+		var w := segment_weights.get(name, 1.0)
 		var q_rel := segments[name].relative_quaternion()
 
-		# 1) Axis-angle based score
 		var angle := results[name].angle
 		var angle_score := PostureMetrics.posture_score(angle)
 
-		# 2) Geodesic distance based score
 		var d := PostureMetrics.geodesic_distance(q_rel)
 		var geo_score := clamp(1.0 - d / PI, 0.0, 1.0)
 
-		# Combine both metrics
 		var score := 0.5 * angle_score + 0.5 * geo_score
 
 		weighted_sum += w * score
@@ -72,10 +86,27 @@ func overall_score(results: Dictionary) -> float:
 	return weighted_sum / total_weight
 
 
-func posture_status(score: float) -> String:
-	if score > 0.9:
-		return "Good Posture"
-	elif score > 0.7:
-		return "Fair Posture"
-	else:
-		return "Poor Posture"
+func update_fsm(score: float) -> void:
+	match current_state:
+		PostureState.GOOD:
+			if score < enter_fair:
+				current_state = PostureState.FAIR
+		PostureState.FAIR:
+			if score < enter_poor:
+				current_state = PostureState.POOR
+			elif score > exit_fair:
+				current_state = PostureState.GOOD
+		PostureState.POOR:
+			if score > exit_poor:
+				current_state = PostureState.FAIR
+
+
+func get_posture_status() -> String:
+	match current_state:
+		PostureState.GOOD:
+			return "Good Posture"
+		PostureState.FAIR:
+			return "Fair Posture"
+		PostureState.POOR:
+			return "Poor Posture"
+	return "Unknown"
