@@ -38,26 +38,29 @@ func _process(delta):
 	visualizer.visualize(main.axis, main.angle)
 
 	var segment := system.segments["upper_spine"]
+	var q_rel := segment.relative_quaternion()
+
 	logger.log(
 		time,
 		"upper_spine",
 		main.angle,
-		segment.relative_quaternion()
+		q_rel
 	)
 
-	system.log_state(
-		time,
-		segment.relative_quaternion()
-	)
+	system.log_state(time, q_rel)
 
 	if timer.update(main.angle, delta):
 		segment.apply_correction(delta * 2.0)
 
 	var score := system.overall_score(results)
-	var status := system.posture_status(score)
+	system.update_fsm(score)
+
+	var status := system.get_posture_status()
+	var confidence := system.confidence_level()
 
 	dashboard.update_score(score)
 	dashboard.update_status(status)
+	dashboard.update_confidence(confidence)
 
 
 func _exit_tree():

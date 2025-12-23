@@ -24,6 +24,7 @@ var segments := {
 }
 
 var history := []
+var max_history := 300
 
 var enter_fair := 0.85
 var exit_fair := 0.90
@@ -52,6 +53,9 @@ func log_state(time: float, q_rel: Quaternion):
 		"angle": 2.0 * acos(clamp(q_rel.w, -1.0, 1.0)),
 		"geo": PostureMetrics.geodesic_distance(q_rel)
 	})
+
+	if history.size() > max_history:
+		history.pop_front()
 
 
 func get_error_history() -> Array:
@@ -111,6 +115,7 @@ func get_posture_status() -> String:
 			return "Poor Posture"
 	return "Unknown"
 
+
 func semantic_feedback(name: String) -> String:
 	if not segments.has(name):
 		return "Unknown posture segment"
@@ -118,14 +123,24 @@ func semantic_feedback(name: String) -> String:
 	var q_rel := segments[name].relative_quaternion()
 	return PostureMetrics.semantic_feedback(q_rel)
 
-func confidence_level(name: String) -> float:
-	if not segments.has(name):
+
+func confidence_level(window := 10) -> float:
+	if history.size() < window:
 		return 0.0
 
-	var q_rel := segments[name].relative_quaternion()
-	var angle := 2.0 * acos(clamp(q_rel.w, -1.0, 1.0))
-	var geo := PostureMetrics.geodesic_distance(q_rel)
+	var recent := history.slice(history.size() - window, history.size())
 
-	return PostureMetrics.confidence_score(angle, geo, history)
+	var mean := 0.0
+	for h in recent:
+		mean += h.angle
+	mean /= recent.size()
 
+	var variance := 0.0
+	for h in recent:
+		variance += pow(h.angle - mean, 2)
+	variance /= recent.size()
 
+	var stability := 1.0 / (1.0 + variance * 10.0)
+	var magnitude := clamp(1.0 - mean / deg_to_rad(30), 0.0, 1.0)
+
+	return clamp(0.5 * stability + 0.5 * magnitude, 0.0, 1.0)
