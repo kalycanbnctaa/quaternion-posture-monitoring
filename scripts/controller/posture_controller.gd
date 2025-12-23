@@ -1,3 +1,5 @@
+extends Node
+
 @export var system: PostureSystem
 @export var visualizer: DeviationVisualizer
 @export var dashboard: Control
@@ -6,12 +8,19 @@
 @export var simulated_angle_deg := 20.0
 
 var timer := PostureTimer.new()
+var logger := PostureLogger.new()
+
+var time := 0.0
+
 
 func _ready():
 	system.setup()
+	logger.start()
+
 
 func _process(delta):
-	# SIMULASI POSTURE (CONFIGURABLE)
+	time += delta
+
 	var axis := simulated_axis.normalized()
 	var angle := deg_to_rad(simulated_angle_deg)
 
@@ -20,32 +29,36 @@ func _process(delta):
 		Quaternion(axis, angle)
 	)
 
-	# ANALYSIS
 	var results := system.analyze()
 	if not results.has("upper_spine"):
 		return
 
 	var main := results["upper_spine"]
 
-	# VISUALIZATION
 	visualizer.visualize(main.axis, main.angle)
 
-	# SLERP-BASED SMOOTH CORRECTION
+	var segment := system.segments["upper_spine"]
+	logger.log(
+		time,
+		"upper_spine",
+		main.angle,
+		segment.relative_quaternion()
+	)
+
+	system.log_state(
+		time,
+		segment.relative_quaternion()
+	)
+
 	if timer.update(main.angle, delta):
-		var segment := system.segments["upper_spine"]
+		segment.apply_correction(delta * 2.0)
 
-		var q_current := segment.measured
-		var q_target := segment.reference   # ideal posture
-
-		var t := clamp(delta * 2.0, 0.0, 1.0)
-		var q_smooth := q_current.slerp(q_target, t)
-
-		segment.set_measured(q_smooth)
-
-	# DASHBOARD
 	var score := system.overall_score(results)
 	var status := system.posture_status(score)
 
 	dashboard.update_score(score)
 	dashboard.update_status(status)
 
+
+func _exit_tree():
+	logger.stop()
