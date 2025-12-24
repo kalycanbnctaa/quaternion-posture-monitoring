@@ -52,29 +52,31 @@ The implementation focuses on **real-time posture deviation detection**, **seman
 
 The system is structured into modular components to ensure clarity, extensibility, and maintainability.
 
+```text
 quaternion-posture-monitoring/
 │
 ├── scripts/
-│ ├── controller/
-│ │ └── posture_controller.gd
-│ │
-│ ├── math/
-│ │ ├── quaternion_utils.gd
-│ │ └── posture_metrics.gd
-│ │
-│ ├── posture/
-│ │ ├── posture_segment.gd
-│ │ ├── posture_analyzer.gd
-│ │ └── posture_corrector.gd
-│ │
-│ └── visualization/
-│ └── deviation_visualizer.gd
+│   ├── controller/
+│   │   └── posture_controller.gd
+│   │
+│   ├── math/
+│   │   ├── quaternion_utils.gd
+│   │   └── posture_metrics.gd
+│   │
+│   ├── posture/
+│   │   ├── posture_segment.gd
+│   │   ├── posture_analyzer.gd
+│   │   └── posture_corrector.gd
+│   │
+│   └── visualization/
+│       └── deviation_visualizer.gd
 │
 ├── shaders/
-│ └── quaternion_rotation.gdshader
+│   └── quaternion_rotation.gdshader
 │
 ├── README.md
 └── project.godot
+```
 
 
 ---
