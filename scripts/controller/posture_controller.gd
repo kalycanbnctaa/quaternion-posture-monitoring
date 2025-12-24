@@ -4,8 +4,18 @@ extends Node
 @export var visualizer: DeviationVisualizer
 @export var dashboard: Control
 
+enum InputMode {
+	SIMULATION,
+	USER_DEFINED
+}
+
+@export var input_mode := InputMode.USER_DEFINED
+
 @export var simulated_axis := Vector3(1, 0, 0)
 @export var simulated_angle_deg := 20.0
+
+@export var user_axis := Vector3(1, 0, 0)
+@export var user_angle_deg := 15.0
 
 var timer := PostureTimer.new()
 var logger := PostureLogger.new()
@@ -21,8 +31,20 @@ func _ready():
 func _process(delta):
 	time += delta
 
-	var axis := simulated_axis.normalized()
-	var angle := deg_to_rad(simulated_angle_deg)
+	var axis: Vector3
+	var angle: float
+
+	if input_mode == InputMode.USER_DEFINED:
+		axis = user_axis
+		angle = deg_to_rad(user_angle_deg)
+	else:
+		axis = simulated_axis
+		angle = deg_to_rad(simulated_angle_deg)
+
+	if axis.length() < 0.0001:
+		axis = Vector3(1, 0, 0)
+
+	axis = axis.normalized()
 
 	system.set_measured(
 		"upper_spine",
