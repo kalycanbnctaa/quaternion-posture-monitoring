@@ -132,15 +132,15 @@ func confidence_level(window := 10) -> float:
 
 	var mean := 0.0
 	for h in recent:
-		mean += h.angle
+		mean += h["angle"]
 	mean /= recent.size()
 
 	var variance := 0.0
 	for h in recent:
-		variance += pow(h.angle - mean, 2)
+		variance += pow(h["angle"] - mean, 2)
 	variance /= recent.size()
 
 	var stability := 1.0 / (1.0 + variance * 10.0)
-	var magnitude := clamp(1.0 - mean / deg_to_rad(30), 0.0, 1.0)
+	var magnitude := clamp(1.0 - mean / deg_to_rad(30.0), 0.0, 1.0)
 
 	return clamp(0.5 * stability + 0.5 * magnitude, 0.0, 1.0)
