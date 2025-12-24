@@ -9,13 +9,7 @@ enum PostureState {
 
 var current_state: PostureState = PostureState.GOOD
 
-var analyzer := PostureAnalyzer.new()
-
-var segment_weights := {
-	"neck": 0.3,
-	"upper_spine": 0.5,
-	"lower_spine": 0.2
-}
+var analyzer: PostureAnalyzer = PostureAnalyzer.new()
 
 var segments := {
 	"neck": PostureSegment.new(),
@@ -23,22 +17,28 @@ var segments := {
 	"lower_spine": PostureSegment.new()
 }
 
-var history := []
-var max_history := 300
+var segment_weights := {
+	"neck": 0.3,
+	"upper_spine": 0.5,
+	"lower_spine": 0.2
+}
 
-var enter_fair := 0.85
-var exit_fair := 0.90
-var enter_poor := 0.65
-var exit_poor := 0.75
+var history: Array = []
+var max_history: int = 300
+
+var enter_fair: float = 0.85
+var exit_fair: float = 0.90
+var enter_poor: float = 0.65
+var exit_poor: float = 0.75
 
 
-func setup():
+func setup() -> void:
 	for name in segments.keys():
 		segments[name].set_reference(Quaternion.IDENTITY)
 		analyzer.add_segment(name, segments[name])
 
 
-func set_measured(name: String, q: Quaternion):
+func set_measured(name: String, q: Quaternion) -> void:
 	if segments.has(name):
 		segments[name].set_measured(q)
 
@@ -47,11 +47,14 @@ func analyze() -> Dictionary:
 	return analyzer.analyze()
 
 
-func log_state(time: float, q_rel: Quaternion):
+func log_state(time: float, q_rel: Quaternion) -> void:
+	var angle: float = 2.0 * acos(clamp(q_rel.w, -1.0, 1.0))
+	var geo: float = PostureMetrics.geodesic_distance(q_rel)
+
 	history.append({
 		"time": time,
-		"angle": 2.0 * acos(clamp(q_rel.w, -1.0, 1.0)),
-		"geo": PostureMetrics.geodesic_distance(q_rel)
+		"angle": angle,
+		"geo": geo
 	})
 
 	if history.size() > max_history:
@@ -66,26 +69,26 @@ func overall_score(results: Dictionary) -> float:
 	if results.is_empty():
 		return 1.0
 
-	var weighted_sum := 0.0
-	var total_weight := 0.0
+	var weighted_sum: float = 0.0
+	var total_weight: float = 0.0
 
 	for name in results.keys():
 		if not segments.has(name):
 			continue
 
-		var w := segment_weights.get(name, 1.0)
-		var q_rel := segments[name].relative_quaternion()
+		var weight: float = segment_weights.get(name, 1.0)
+		var q_rel: Quaternion = segments[name].relative_quaternion()
 
-		var angle := results[name].angle
-		var angle_score := PostureMetrics.posture_score(angle)
+		var angle: float = results[name].angle
+		var angle_score: float = PostureMetrics.posture_score(angle)
 
-		var d := PostureMetrics.geodesic_distance(q_rel)
-		var geo_score := clamp(1.0 - d / PI, 0.0, 1.0)
+		var geo_dist: float = PostureMetrics.geodesic_distance(q_rel)
+		var geo_score: float = clamp(1.0 - geo_dist / PI, 0.0, 1.0)
 
-		var score := 0.5 * angle_score + 0.5 * geo_score
+		var score: float = 0.5 * angle_score + 0.5 * geo_score
 
-		weighted_sum += w * score
-		total_weight += w
+		weighted_sum += weight * score
+		total_weight += weight
 
 	return weighted_sum / total_weight
 
@@ -120,27 +123,27 @@ func semantic_feedback(name: String) -> String:
 	if not segments.has(name):
 		return "Unknown posture segment"
 
-	var q_rel := segments[name].relative_quaternion()
+	var q_rel: Quaternion = segments[name].relative_quaternion()
 	return PostureMetrics.semantic_feedback(q_rel)
 
 
-func confidence_level(window := 10) -> float:
+func confidence_level(window: int = 10) -> float:
 	if history.size() < window:
 		return 0.0
 
-	var recent := history.slice(history.size() - window, history.size())
+	var recent: Array = history.slice(history.size() - window, history.size())
 
-	var mean := 0.0
+	var mean: float = 0.0
 	for h in recent:
 		mean += h["angle"]
 	mean /= recent.size()
 
-	var variance := 0.0
+	var variance: float = 0.0
 	for h in recent:
 		variance += pow(h["angle"] - mean, 2)
 	variance /= recent.size()
 
-	var stability := 1.0 / (1.0 + variance * 10.0)
-	var magnitude := clamp(1.0 - mean / deg_to_rad(30.0), 0.0, 1.0)
+	var stability: float = 1.0 / (1.0 + variance * 10.0)
+	var magnitude: float = clamp(1.0 - mean / deg_to_rad(30.0), 0.0, 1.0)
 
 	return clamp(0.5 * stability + 0.5 * magnitude, 0.0, 1.0)

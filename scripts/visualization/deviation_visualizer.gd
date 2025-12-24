@@ -19,7 +19,6 @@ func visualize(axis: Vector3, angle: float):
 		mesh.modulate = Color.GREEN
 		return
 
-
 	# ERROR VECTOR (MERAH) 
 	error_arrow.visible = true
 	error_arrow.look_at(
@@ -28,7 +27,6 @@ func visualize(axis: Vector3, angle: float):
 	)
 	error_arrow.scale.y = angle * 5.0
 	error_arrow.modulate = Color.RED
-
 
 	# CORRECTION VECTOR (BIRU)
 	# Correction = inverse rotation → axis dibalik
@@ -41,7 +39,6 @@ func visualize(axis: Vector3, angle: float):
 	)
 	correction_arrow.scale.y = angle * 5.0
 	correction_arrow.modulate = Color.CORNFLOWER_BLUE
-
 
 	# WARNA STATUS POSTURE 
 	if angle < deg_to_rad(10):

@@ -1,15 +1,23 @@
+extends Node
 class_name PostureMetrics
 
-static func posture_score(angle: float, max_angle := deg_to_rad(30.0)) -> float:
+
+static func posture_score(
+	angle: float,
+	max_angle: float = deg_to_rad(30.0)
+) -> float:
 	return clamp(1.0 - angle / max_angle, 0.0, 1.0)
 
+
 static func error_energy(q_rel: Quaternion) -> float:
-	var w := abs(q_rel.w)
+	var w: float = clamp(abs(q_rel.w), 0.0, 1.0)
 	return 1.0 - w * w
 
+
 static func geodesic_distance(q: Quaternion) -> float:
-	var w := clamp(abs(q.w), -1.0, 1.0)
+	var w: float = clamp(abs(q.w), 0.0, 1.0)
 	return 2.0 * acos(w)
+
 
 static func semantic_feedback(q_rel: Quaternion) -> String:
 	var v := Vector3(q_rel.x, q_rel.y, q_rel.z)
@@ -30,22 +38,33 @@ static func semantic_feedback(q_rel: Quaternion) -> String:
 
 	return "Detected issue: Complex posture deviation"
 
+
 static func confidence_score(
 	angle: float,
 	geo_dist: float,
 	history: Array
 ) -> float:
-	var angle_conf := clamp(1.0 - angle / deg_to_rad(30.0), 0.0, 1.0)
-	var geo_conf := clamp(1.0 - geo_dist / PI, 0.0, 1.0)
+	var angle_conf: float = clamp(
+		1.0 - angle / deg_to_rad(30.0),
+		0.0,
+		1.0
+	)
 
-	var stability_conf := 1.0
+	var geo_conf: float = clamp(
+		1.0 - geo_dist / PI,
+		0.0,
+		1.0
+	)
+
+	var stability_conf: float = 1.0
+
 	if history.size() >= 3:
-		var mean := 0.0
+		var mean: float = 0.0
 		for h in history:
 			mean += h["angle"]
 		mean /= history.size()
 
-		var variance := 0.0
+		var variance: float = 0.0
 		for h in history:
 			variance += pow(h["angle"] - mean, 2)
 		variance /= history.size()
